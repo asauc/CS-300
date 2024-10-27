@@ -1,0 +1,183 @@
+/*
+* ===============
+* Ashlyn Saucier
+* CS 300 - SNHU
+* Project Two
+* ===============
+*/ 
+
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <algorithm>
+#include <string>
+#include <limits>
+
+using namespace std;
+
+// Structure to hold course information
+struct Course {
+    string courseNumber;
+    string title;
+    vector<string> prerequisites;
+};
+
+// Function declarations
+void loadCourses(const string& filename, vector<Course>& courses);
+void printCourses(const vector<Course>& courses);
+void printCourseInfo(const vector<Course>& courses, const string& courseNumber);
+string trim(const string& str);
+
+int main() {
+    vector<Course> courses;
+    int option = 0;
+    string filename = "courses.txt"; // Default filename
+
+    cout << "Welcome to the course planner." << endl;
+
+    while (true) {
+        cout << "1. Load Data Structure." << endl;
+        cout << "2. Print Course List." << endl;
+        cout << "3. Print Course." << endl;
+        cout << "9. Exit" << endl;
+        cout << "What would you like to do? ";
+
+        cin >> option;
+
+        // Input validation for menu option
+        if (cin.fail()) {
+            cin.clear(); // Clear the error state
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+            cout << option << " is not a valid option." << endl;
+            continue;
+        }
+
+        switch (option) {
+        case 1:
+            loadCourses(filename, courses); // Load from default file
+            break;
+
+        case 2:
+            printCourses(courses); // Print list of courses
+            break;
+
+        case 3: {
+            cout << "What course do you want to know about? ";
+            string courseNumber;
+            cin >> courseNumber;
+            printCourseInfo(courses, courseNumber); // Show course info
+            break;
+        }
+
+        case 9:
+            cout << "Thank you for using the course planner!" << endl; // Exit message
+            return 0;
+
+        default:
+            cout << option << " is not a valid option." << endl; // Handle invalid option
+            break;
+        }
+    }
+
+    return 0; // This return is effectively unreachable
+}
+
+// Function to load courses from a file
+void loadCourses(const string& filename, vector<Course>& courses) {
+    ifstream file(filename); // Open the specified file
+    if (!file.is_open()) {
+        cerr << "Error opening file: " << filename << endl; // Error handling
+        return;
+    }
+
+    string line;
+    while (getline(file, line)) {
+        istringstream ss(line);
+        Course course;
+
+        // Read the course number
+        if (!(getline(ss, course.courseNumber, ','))) {
+            cerr << "Error reading course number." << endl;
+            continue; // Skip this line
+        }
+
+        // Read the title
+        if (!(getline(ss, course.title, ','))) {
+            cerr << "Error reading title for course: " << course.courseNumber << endl;
+            continue; // Skip this line
+        }
+
+        // Read prerequisites
+        string prerequisitesLine;
+        if (getline(ss, prerequisitesLine)) {
+            istringstream prereqStream(prerequisitesLine);
+            string prereq;
+            while (getline(prereqStream, prereq, ',')) {
+                course.prerequisites.push_back(trim(prereq)); // Add prerequisites to the vector
+            }
+        }
+
+        // Add course to vector
+        courses.push_back(course);
+    }
+
+    cout << "Loaded " << courses.size() << " courses from the file." << endl; // Inform the user
+    file.close(); // Close the file
+}
+
+// Function to trim whitespace from a string
+string trim(const string& str) {
+    size_t first = str.find_first_not_of(' ');
+    size_t last = str.find_last_not_of(' ');
+    return (first == string::npos) ? "" : str.substr(first, (last - first + 1));
+}
+
+// Function to print all course titles in alphanumeric order
+void printCourses(const vector<Course>& courses) {
+    if (courses.empty()) {
+        cout << "No courses loaded." << endl; // Inform if no courses are available
+        return;
+    }
+
+    vector<Course> sortedCourses = courses; // Copy vector to sort
+    sort(sortedCourses.begin(), sortedCourses.end(), [](const Course& a, const Course& b) {
+        return a.courseNumber < b.courseNumber; // Sort by course number
+        });
+
+    cout << "Here is a sample schedule:" << endl;
+    for (const auto& course : sortedCourses) {
+        cout << course.courseNumber << ", " << course.title << endl; // Print each course
+    }
+}
+
+// Function to print details about a specific course
+void printCourseInfo(const vector<Course>& courses, const string& courseNumber) {
+    if (courses.empty()) {
+        cout << "No courses loaded." << endl; // Handle case where no courses are present
+        return;
+    }
+
+    auto it = find_if(courses.begin(), courses.end(),
+        [&courseNumber](const Course& c) {
+            return c.courseNumber == courseNumber; // Find course by number
+        });
+
+    if (it != courses.end()) {
+        cout << it->courseNumber << ", " << it->title << endl; // Print course title
+        cout << "Prerequisites: ";
+        if (it->prerequisites.empty()) {
+            cout << "None"; // No prerequisites
+        }
+        else {
+            for (const auto& prereq : it->prerequisites) {
+                cout << prereq << " "; // Print all prerequisites
+            }
+        }
+        cout << endl;
+    }
+    else {
+        cout << "Course not found: " << courseNumber << endl; // Course not found message
+    }
+}
